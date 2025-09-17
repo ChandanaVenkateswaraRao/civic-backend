@@ -62,3 +62,48 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+
+
+
+// NEW FUNCTION: To be used by Admins to create worker accounts
+export const createWorker = async (req, res) => {
+  const { name, email, password, assignedCategory } = req.body;
+
+  // Basic validation
+  if (!name || !email || !password || !assignedCategory) {
+    return res.status(400).json({ message: 'Please provide all required fields.' });
+  }
+
+  try {
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'A user with this email already exists.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const worker = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'worker', // Set the role explicitly
+      assignedCategory, // Assign their specialty
+    });
+
+    if (worker) {
+      res.status(201).json({
+        _id: worker._id,
+        name: worker.name,
+        email: worker.email,
+        role: worker.role,
+        assignedCategory: worker.assignedCategory,
+      });
+    } else {
+      res.status(400).json({ message: 'Invalid worker data provided.' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};

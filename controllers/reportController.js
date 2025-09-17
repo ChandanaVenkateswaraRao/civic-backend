@@ -1,5 +1,5 @@
 import Report from '../models/Report.js';
-
+import User from '../models/User.js';
 // Automated Routing Logic
 const getDepartmentForCategory = (category) => {
   switch (category) {
@@ -80,6 +80,27 @@ export const updateReportStatus = async (req, res) => {
       res.status(404).json({ message: 'Report not found' });
     }
   } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+
+
+// NEW FUNCTION FOR WORKERS
+export const getWorkerReports = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'worker' || !req.user.assignedCategory) {
+      return res.status(403).json({ message: 'Not authorized or no category assigned.' });
+    }
+
+    // This query will now work correctly because the User model is imported.
+    const reports = await Report.find({ category: req.user.assignedCategory })
+      .populate('submittedBy', 'name email')
+      .sort({ createdAt: -1 });
+      
+    res.json(reports);
+  } catch (error) {
+    console.log('Error in getWorkerReports:', error); // Add a log for better debugging
     res.status(500).json({ message: 'Server Error' });
   }
 };
